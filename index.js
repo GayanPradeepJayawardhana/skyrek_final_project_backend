@@ -11,6 +11,7 @@ import orderRouter from "./routers/orderRouter.js";
 import contactRouter from "./routers/contactRouter.js";
 import reviewRouter from "./routers/reviewRouter.js";
 import feedbackRouter from "./routers/feedbackRouter.js";
+import wishlistRouter from "./routers/wishlistRouter.js";
 
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 dotenv.config();
@@ -37,6 +38,7 @@ app.use("/api/orders", orderRouter);
 app.use("/api/contact", contactRouter);
 app.use("/api/reviews", reviewRouter);
 app.use("/api/feedback", feedbackRouter);
+app.use("/api/wishlist", wishlistRouter);
 
 app.listen(3000, () => {
     console.log("Server started successfully on port 3000");
