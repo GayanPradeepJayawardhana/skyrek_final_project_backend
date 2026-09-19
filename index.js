@@ -6,7 +6,9 @@ import productRouter from './routers/productRouter.js'
 import dotenv from "dotenv"
 import cors from "cors"
 import orderRouter from './routers/orderRouter.js'
+import dns from "dns";
 
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 dotenv.config()
 
 const mongoDBURI = process.env.MONGO_URI

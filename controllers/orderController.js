@@ -59,13 +59,13 @@ export async function createOrder(req,res){
 
             orderData.items.push({
                 product : {
-                    productId : product.productId,
-                    name : product.name,
-                    image : product.images[0],
-                    price : product.price,
-                    labelledPrice : product.labelledPrice
-                },
-                quantity : req.body.items[i].quantity
+                productId : product.productId,
+                name : product.name,
+                image : product.images[0],
+                price : product.price,
+                labelledPrice : product.labelledPrice
+            },
+                qty : req.body.items[i].quantity
             })
 
             orderData.totalAmount += product.price * req.body.items[i].quantity
