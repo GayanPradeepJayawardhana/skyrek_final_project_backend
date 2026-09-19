@@ -32,7 +32,7 @@ app.use(
     cors({
         origin: [
             "http://localhost:5173",
-            "https://your-vercel-app.vercel.app",
+            "https://skyrek-final-project-frontend.vercel.app/",
         ],
         credentials: true,
     })
@@ -48,6 +48,8 @@ app.use("/api/reviews", reviewRouter);
 app.use("/api/feedback", feedbackRouter);
 app.use("/api/wishlist", wishlistRouter);
 
-app.listen(3000, () => {
-    console.log("Server started successfully on port 3000");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`Server started successfully on port ${PORT}`);
 });
