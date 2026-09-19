@@ -2,11 +2,15 @@ import Order from "../models/order.js"
 import Product from "../models/product.js"
 
 export async function createOrder(req,res){
-    //ORD000001
     try{
 
         if(req.user == null){
             res.status(401).json({message : "Unauthorized"})
+            return
+        }
+
+        if(req.user.isBlocked){
+            res.status(403).json({message : "Your account is blocked"})
             return
         }
 
@@ -23,22 +27,16 @@ export async function createOrder(req,res){
             totalAmount : 0
         }
 
-
         const lastOrder = await Order.findOne().sort({date : -1})
 
-
         if(lastOrder != null){
-
-            const lastOrderId = lastOrder.orderId //"ORD000014"
-            const lastOrderNumberInString = lastOrderId.replace("ORD", "") //"000014"
-            const lastOrderNumber = parseInt(lastOrderNumberInString) //14
-
-            const newOrderNumber = lastOrderNumber + 1 //15
-            const newOrderNumberInString = newOrderNumber.toString().padStart(6, "0") //"000015"
-            orderData.orderId = "ORD" + newOrderNumberInString //"ORD000015"
-
+            const lastOrderId = lastOrder.orderId
+            const lastOrderNumberInString = lastOrderId.replace("ORD", "")
+            const lastOrderNumber = parseInt(lastOrderNumberInString)
+            const newOrderNumber = lastOrderNumber + 1
+            const newOrderNumberInString = newOrderNumber.toString().padStart(6, "0")
+            orderData.orderId = "ORD" + newOrderNumberInString
         }
-
 
         for(let i=0 ; i<req.body.items.length; i++){
 
@@ -52,19 +50,19 @@ export async function createOrder(req,res){
                 res.status(400).json({message : "Product with id " + req.body.items[i].productId + " is not available"})
                 return
             }
-            // if(product.stock < req.body.items[i].quantity){
-            //     res.status(400).json({message : "Product with id " + req.body.items[i].productId + " does not have enough stock"})
-            //     return
-            // }
+            if(product.stock < req.body.items[i].quantity){
+                res.status(400).json({message : "Product with id " + req.body.items[i].productId + " does not have enough stock"})
+                return
+            }
 
             orderData.items.push({
                 product : {
-                productId : product.productId,
-                name : product.name,
-                image : product.images[0],
-                price : product.price,
-                labelledPrice : product.labelledPrice
-            },
+                    productId : product.productId,
+                    name : product.name,
+                    image : product.images[0],
+                    price : product.price,
+                    labelledPrice : product.labelledPrice
+                },
                 qty : req.body.items[i].quantity
             })
 
@@ -72,25 +70,23 @@ export async function createOrder(req,res){
         }
 
         const newOrder = new Order(orderData)
-       
         await newOrder.save()
 
+        // Decrement stock AFTER successful order save
+        for(let i=0 ; i<req.body.items.length; i++){
+            await Product.updateOne(
+                {productId : req.body.items[i].productId},
+                {$inc : {stock : -req.body.items[i].quantity}}
+            )
+        }
+
         console.log("Order created with id " + newOrder.orderId)
-
-        // for(let i=0 ; i<req.body.items.length; i++){
-
-        //     await Product.updateOne(
-        //         {productId : req.body.items[i].productId},
-        //         {$inc : {stock : -req.body.items[i].quantity}}
-        //     )
-        // }
 
         res.json({message : "Order created successfully", orderId : newOrder.orderId})
 
     }catch(err){
-        res.json({message : err.message})
+        res.status(500).json({message : err.message})
     }
-
 }
 
 export async function getAllOrders(req,res){
@@ -102,43 +98,35 @@ export async function getAllOrders(req,res){
 
     try{
 
+        const pageSizeInString = req.params.pageSize || "10"
+        const pageNumberInString = req.params.pageNumber || "1"
+        const pageSize = parseInt(pageSizeInString)
+        const pageNumber = parseInt(pageNumberInString)
+
         if(req.user.isAdmin){
 
-            const pageSizeInString = req.params.pageSize||"10"
-
-            const pageNumberInString = req.params.pageNumber||"1"
-
-            const pageSize = parseInt(pageSizeInString) //10
-
-            const pageNumber = parseInt(pageNumberInString) //1
-
             const orderCount = await Order.countDocuments()
-
             const totalPages = Math.ceil(orderCount / pageSize)
-
-            const orders = await Order.find().sort({date : -1}).skip((pageNumber-1)*pageSize).limit(pageSize)
+            const orders = await Order.find()
+                .sort({date : -1})
+                .skip((pageNumber-1)*pageSize)
+                .limit(pageSize)
 
             res.json({
                 orders : orders,
                 totalPages : totalPages,
+                currentPage : pageNumber,
                 totalOrders : orderCount
             })
 
         }else{
 
-            const pageSizeInString = req.params.pageSize||"10"
-
-            const pageNumberInString = req.params.pageNumber||"1"
-
-            const pageSize = parseInt(pageSizeInString) //10
-
-            const pageNumber = parseInt(pageNumberInString) //1
-
             const orderCount = await Order.countDocuments({email : req.user.email})
-
             const totalPages = Math.ceil(orderCount / pageSize)
-
-            const orders = await Order.find({email : req.user.email}).sort({date : -1}).skip((pageNumber-1)*pageSize).limit(pageSize)
+            const orders = await Order.find({email : req.user.email})
+                .sort({date : -1})
+                .skip((pageNumber-1)*pageSize)
+                .limit(pageSize)
 
             res.json({
                 orders : orders,
@@ -150,12 +138,13 @@ export async function getAllOrders(req,res){
         }
 
     }catch(err){
-        res.json({message : err.message})
+        res.status(500).json({message : err.message})
     }
 
 }
 
 export async function updateOrderStatus(req,res){
+
     if(req.user == null || req.user.isAdmin == false){
         res.status(401).json({message : "Unauthorized"})
         return
@@ -170,13 +159,21 @@ export async function updateOrderStatus(req,res){
             return
         }
 
+        const allowedStatuses = ["Pending", "Processing", "Shipped", "Delivered"]
+
+        if(!allowedStatuses.includes(req.body.status)){
+            res.status(400).json({message : "Invalid status. Allowed values: " + allowedStatuses.join(", ")})
+            return
+        }
+
         await Order.updateOne(
             {orderId : req.params.orderId},
             {status : req.body.status}
         )
+
         res.json({message : "Order status updated successfully"})
 
     }catch(err){
-        res.json({message : err.message})
+        res.status(500).json({message : err.message})
     }
 }
