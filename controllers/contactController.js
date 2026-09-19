@@ -190,7 +190,7 @@ export async function replyToContactMessage(req, res) {
             html: `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
                     <div style="background: #001a84; color: white; padding: 20px; border-radius: 8px 8px 0 0;">
-                        <h2 style="margin: 0;">iComputers Support</h2>
+                        <h2 style="margin: 0;">PCFORGE Support</h2>
                     </div>
                     <div style="padding: 24px; background: #f9fafb; border: 1px solid #e5e7eb; border-top: none;">
                         <p>Hello ${message.name},</p>
@@ -204,7 +204,7 @@ export async function replyToContactMessage(req, res) {
                         </div>
                     </div>
                     <div style="padding: 16px; background: #001a84; color: white; text-align: center; font-size: 12px; border-radius: 0 0 8px 8px;">
-                        © iComputers — Colombo, Sri Lanka
+                        © PCFORGE — Colombo, Sri Lanka
                     </div>
                 </div>
             `,

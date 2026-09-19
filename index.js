@@ -13,7 +13,7 @@ import reviewRouter from "./routers/reviewRouter.js";
 import feedbackRouter from "./routers/feedbackRouter.js";
 import wishlistRouter from "./routers/wishlistRouter.js";
 
-dns.setServers(["1.1.1.1", "8.8.8.8"]);
+
 dotenv.config();
 
 const mongoDBURI = process.env.MONGO_URI;
